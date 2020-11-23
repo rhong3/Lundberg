@@ -4,12 +4,14 @@ library(fastDummies)
 library(dplyr)
 
 exclude = c('Sample_ID', 'Patient_ID', 'Sample_Tumor_Normal', 'Sample.IDs', 'Human.Readable.Label', 'Replicate_Measurement_IDs', 'specimen_id', 'slide_id', 'Experiment', 'Channel')
-
+ensg_ccdprotein <- read_csv("ensg_ccdprotein.csv")
 cancers = c('BRCA', 'LUAD', 'LSCC', 'OV', 'CO', 'HN', 'UCEC', 'GBM', 'CCRCC')
 for (can in cancers){
   clinical = read_csv(paste(can, "_clinical.csv", sep=''))
   prot = read_csv(paste(can, "_proteomics.csv", sep=''))
   prot = prot[rowSums(is.na(prot)) < ncol(prot)*0.3, ]
+  prot = prot[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(prot)))]
+  
   clinical = clinical[clinical$Patient_ID %in% prot$Patient_ID,]
   
   clinical = clinical[clinical$Sample_Tumor_Normal== 'Tumor',]

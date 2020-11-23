@@ -2,11 +2,14 @@ library(readr)
 library(ggplot2)
 library(ggpubr)
 library(gridExtra)
+library(pheatmap)
 
-cancers = c('LUAD', 'LSCC', 'BRCA', 'OV', 'CO', 'HN', 'UCEC', 'GBM', 'CCRCC')
+cancers = c('BRCA', 'LUAD', 'LSCC', 'OV', 'CO', 'HN', 'UCEC', 'GBM', 'CCRCC')
 ensg_ccdprotein <- read_csv("ensg_ccdprotein.csv")
 ensg_ccdprotein_transcript_regulated <- read_csv("ensg_ccdprotein_transcript_regulated.csv")
 ensg_ccdprotein_nontranscript_regulated <- read_csv("ensg_ccdprotein_nontranscript_regulated.csv")
+
+# Prot-RNA corr
 all = data.frame(matrix(ncol = 3, nrow = 0))
 colnames(all) <- c('correlation coefficient', 'transcript regulated', 'type')
 summ = data.frame(matrix(ncol = 7, nrow = 0))
@@ -76,7 +79,7 @@ for (can in cancers){
     labs(title=paste(can, "protein and mRNA Spearman correlation", sep=' '))+ 
     theme_classic()+
     theme(legend.position="top", plot.title = element_text(hjust = 0.5)) 
-  pdf(file=paste(can, "protein-mRNA-corr.pdf", sep='_'),
+  pdf(file=paste('Results/', can, "_protein-mRNA-corr.pdf", sep=''),
       width=10,height=8)
   grid.arrange(p,nrow=1, ncol=1)
   dev.off()
@@ -88,13 +91,80 @@ p = ggplot(all, aes(x=`correlation coefficient`, fill=`transcript regulated`, co
   labs(title=paste('All types', "protein and mRNA Spearman correlation", sep=' '))+ 
   theme_classic()+
   theme(legend.position="top", plot.title = element_text(hjust = 0.5)) 
-pdf(file=paste('All types', "protein-mRNA-corr.pdf", sep='_'),
+pdf(file=paste('Results/', 'All types', "_protein-mRNA-corr.pdf", sep=''),
     width=10,height=8)
 grid.arrange(p,nrow=1, ncol=1)
 dev.off()
 
-write.csv(all, 'protein-mRNA-corr.csv', row.names = TRUE)
-write.csv(summ, 'summary_protein-mRNA-corr.csv', row.names = FALSE)
+write.csv(all, 'Results/protein-mRNA-corr.csv', row.names = TRUE)
+write.csv(summ, 'Results/summary_protein-mRNA-corr.csv', row.names = FALSE)
 
 
+# Corr within group
+for (can in cancers){
+  prot = read_csv(paste(can, "_proteomics.csv", sep=''))
+  trans = read_csv(paste(can, "_transcriptomics.csv", sep=''))
+  prot[, 2:ncol(prot)] = prot[, order(colnames(prot[, 2:ncol(prot)]))]
+  trans[, 2:ncol(trans)] = trans[, order(colnames(trans[, 2:ncol(trans)]))]
+  prot[, 2:ncol(prot)] <- sapply(prot[, 2:ncol(prot)] , as.numeric)
+  trans[, 2:ncol(trans)] <- sapply(trans[, 2:ncol(trans)] , as.numeric)
+  
+  prot.tumor = prot[!grepl("\\.N", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.N", trans$Patient_ID), ]
+  prot.tumor = prot[!grepl("\\.C", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.C", trans$Patient_ID), ]
+  prot.tumor = prot.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(prot.tumor)))]
+  trans.tumor = trans.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(trans.tumor)))]
+  matt.prot = cor(prot.tumor[, 2:ncol(prot.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  matt.trans = cor(trans.tumor[, 2:ncol(trans.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  write.csv(matt.prot, paste('Results/', can, '_protein-corr-ALL.csv', sep=''), row.names = TRUE)
+  write.csv(matt.trans, paste('Results/', can, '_RNA-corr-ALL.csv', sep=''), row.names = TRUE)
+  matt.prot[is.na(matt.prot)] <- 0
+  matt.trans[is.na(matt.trans)] <- 0
+  pp = pheatmap(matt.prot, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' proteomics Spearman correlation ALL', sep=''))
+  pt = pheatmap(matt.trans, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' transcriptomics Spearman correlation ALL', sep=''))
+  pdf(file=paste('Results/', can, "_ALL-internal-corr.pdf", sep=''),
+      width=20,height=11)
+  grid.arrange(pp$gtable, pt$gtable, nrow=1, ncol=2)
+  dev.off()
+  
+  
+  prot.tumor = prot[!grepl("\\.N", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.N", trans$Patient_ID), ]
+  prot.tumor = prot[!grepl("\\.C", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.C", trans$Patient_ID), ]
+  prot.tumor = prot.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein_nontranscript_regulated$SYMBOL, colnames(prot.tumor)))]
+  trans.tumor = trans.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein_nontranscript_regulated$SYMBOL, colnames(trans.tumor)))]
+  matt.prot = cor(prot.tumor[, 2:ncol(prot.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  matt.trans = cor(trans.tumor[, 2:ncol(trans.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  write.csv(matt.prot, paste('Results/', can, '_protein-corr-nontranscript.csv', sep=''), row.names = TRUE)
+  write.csv(matt.trans, paste('Results/', can, '_RNA-corr-nontranscript.csv', sep=''), row.names = TRUE)
+  matt.prot[is.na(matt.prot)] <- 0
+  matt.trans[is.na(matt.trans)] <- 0
+  pp = pheatmap(matt.prot, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' proteomics Spearman correlation nontranscript', sep=''))
+  pt = pheatmap(matt.trans, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' transcriptomics Spearman correlation nontranscript', sep=''))
+  pdf(file=paste('Results/', can, "_nontranscript-internal-corr.pdf", sep=''),
+      width=20,height=11)
+  grid.arrange(pp$gtable, pt$gtable, nrow=1, ncol=2)
+  dev.off()
+  
+  prot.tumor = prot[!grepl("\\.N", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.N", trans$Patient_ID), ]
+  prot.tumor = prot[!grepl("\\.C", prot$Patient_ID), ]
+  trans.tumor = trans[!grepl("\\.C", trans$Patient_ID), ]
+  prot.tumor = prot.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein_transcript_regulated$SYMBOL, colnames(prot.tumor)))]
+  trans.tumor = trans.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein_transcript_regulated$SYMBOL, colnames(trans.tumor)))]
+  matt.prot = cor(prot.tumor[, 2:ncol(prot.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  matt.trans = cor(trans.tumor[, 2:ncol(trans.tumor)],  method = "spearman", use="pairwise.complete.obs")
+  write.csv(matt.prot, paste('Results/', can, '_protein-corr-transcript.csv', sep=''), row.names = TRUE)
+  write.csv(matt.trans, paste('Results/', can, '_RNA-corr-transcript.csv', sep=''), row.names = TRUE)
+  matt.prot[is.na(matt.prot)] <- 0
+  matt.trans[is.na(matt.trans)] <- 0
+  pp = pheatmap(matt.prot, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' proteomics Spearman correlation transcript', sep=''))
+  pt = pheatmap(matt.trans, show_rownames=FALSE, show_colnames=FALSE, main=paste(can, ' transcriptomics Spearman correlation transcript', sep=''))
+  pdf(file=paste('Results/', can, "_transcript-internal-corr.pdf", sep=''),
+      width=20,height=11)
+  grid.arrange(pp$gtable, pt$gtable, nrow=1, ncol=2)
+  dev.off()
+}
 

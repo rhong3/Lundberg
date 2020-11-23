@@ -5,7 +5,7 @@ for (can in cancers){
   
   out_dir='Results'
   
-  p_value=0.005
+  p_value=0.0005
   
   clinical_data=paste('ICA_', can, '_clinical.csv', sep='')
   
@@ -16,6 +16,7 @@ for (can in cancers){
   library(gplots)
   library(RColorBrewer)
   library(ggplot2)
+  library(gridExtra)
   library(stringr)
   
   source('scripts/ICA/ICA_Clusters_Functions.R')
@@ -72,20 +73,21 @@ for (can in cancers){
   colnames(icPave_plot)[1:2]=c('IC','clinical_feature')
   icPave_plot[,1]=factor(icPave_plot[,1])
   icPave_plot$IC=paste('IC',str_pad(icPave_plot$IC,2,pad='0'),sep='_')
-  png(filename=paste(out_dir,paste(exp_prefix,'IC_cluster_clinical_association.png',sep='_'),sep='/'),
-      width = 1200, height = 480, units = "px", 
-      pointsize = 12,
-      bg = 'transparent')
+
   
-  ggplot(icPave_plot,aes(x=IC,y=clinical_feature))+
-    theme_classic(base_size=12)+
+  p = ggplot(icPave_plot,aes(x=IC,y=clinical_feature))+
+    theme_classic(base_size=30)+
     theme(axis.line=element_blank())+
     theme(axis.text.x = element_text(angle=90,vjust=0.5))+
     geom_tile(aes(fill=value))+
     scale_fill_gradient2(low='white',high='purple')+
-    geom_text(aes(label=round(value,digits=2)),size=2)
-  graphics.off()
+    geom_text(aes(label=round(value,digits=10)),size=10)
   
+  pdf(file=paste(out_dir,paste(exp_prefix,'IC_cluster_clinical_association.pdf',sep='_'),sep='/'),
+      width = 30, height = 25, 
+      bg = 'transparent')
+  grid.arrange(p,nrow=1, ncol=1)
+  dev.off()
 }
 
 

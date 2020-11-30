@@ -61,3 +61,41 @@ prot.oladata = prot[,match(rownames(clinical), colnames(prot))]
 prot.oladata = cbind(prot[123], prot.oladata)
 write.csv(prot.oladata, "Results/OLA/BRCA_subtype/ola_data.csv")
 
+# UCEC Subtyps
+prot = read.csv("UCEC_proteomics.csv", row.names=1)
+prot = prot[rowSums(is.na(prot)) < ncol(prot)*0.3, ]
+for(i in 1:ncol(prot)){
+  prot[is.na(prot[,i]), i] <- mean(unlist(prot[,i]), na.rm = TRUE)
+}
+clinical = read.csv('ICA_UCEC_clinical.csv', row.names=1)
+clinical = clinical[, c("Histologic_type_Endometrioid", "Histologic_type_Serous")]
+colnames(clinical) = c('Endometrioid', 'Serous')
+write.csv(clinical, "Results/OLA/UCEC_subtype/UCEC_subtype.csv")
+
+fileConn<-file("Results/OLA/UCEC_subtype/samples.txt")
+writeLines(rownames(clinical), fileConn)
+close(fileConn)
+
+fileConn<-file("Results/OLA/UCEC_subtype/Endometrioid.txt")
+writeLines(rownames(clinical[which(clinical$Endometrioid==1),]), fileConn)
+close(fileConn)
+fileConn<-file("Results/OLA/UCEC_subtype/non_Endometrioid.txt")
+writeLines(rownames(clinical[which(clinical$Endometrioid==0),]), fileConn)
+close(fileConn)
+
+fileConn<-file("Results/OLA/UCEC_subtype/Serous.txt")
+writeLines(rownames(clinical[which(clinical$Serous==1),]), fileConn)
+close(fileConn)
+fileConn<-file("Results/OLA/UCEC_subtype/non_Serous.txt")
+writeLines(rownames(clinical[which(clinical$Serous==0),]), fileConn)
+close(fileConn)
+
+prot = data.frame(t(prot))
+prot$gene = rownames(prot)
+colnames(prot) = gsub('\\.', '-', colnames(prot))
+
+prot.oladata = prot[,match(rownames(clinical), colnames(prot))]
+prot.oladata = cbind(prot[145], prot.oladata)
+write.csv(prot.oladata, "Results/OLA/UCEC_subtype/ola_data.csv")
+
+

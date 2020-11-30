@@ -2,7 +2,7 @@
 
 
 gene_column_name="gene"
-set="BRCA_subtype"
+set="UCEC_subtype"
 
 updown="up"
 location_of_py_file="make_outliers_table.py"

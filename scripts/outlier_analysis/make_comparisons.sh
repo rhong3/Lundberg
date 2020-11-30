@@ -1,9 +1,9 @@
 #!/bin/bash
 
 gene_column_name="gene"
-set="BRCA_subtype"
+set="UCEC_subtype"
 
-for m in Basal Her2 LumA LumB Normal
+for m in Endometrioid Serous
 do
 	location_of_py_file="compare_groups_outliers.py"
 	location_of_outliers_file="/Users/rh2740/documents/Lundberg/Results/OLA/"$set"/ola_table.txt"

@@ -27,6 +27,9 @@ for (can in cancers){
   prot.tumor = prot.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(prot.tumor)))]
   trans.tumor = trans.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(trans.tumor)))]
   
+  prot.tumor = prot.tumor[, colSums(is.na(prot.tumor)) < nrow(prot)*0.3]
+  trans.tumor = trans.tumor[, colSums(is.na(trans.tumor)) < nrow(prot)*0.3]
+  
   for(i in 1:ncol(prot.tumor)){
     prot.tumor[is.na(prot.tumor[,i]), i] <- mean(unlist(prot.tumor[,i]), na.rm = TRUE)
   }

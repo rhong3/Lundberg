@@ -26,8 +26,14 @@ for (can in cancers){
   trans.tumor = trans[!grepl("\\.C", trans$Patient_ID), ]
   prot.tumor = prot.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(prot.tumor)))]
   trans.tumor = trans.tumor[ ,c("Patient_ID", intersect(ensg_ccdprotein$SYMBOL, colnames(trans.tumor)))]
-  prot.tumor[is.na(prot.tumor)] <- 0
-  trans.tumor[is.na(trans.tumor)] <- 0
+  
+  for(i in 1:ncol(prot.tumor)){
+    prot.tumor[is.na(prot.tumor[,i]), i] <- mean(unlist(prot.tumor[,i]), na.rm = TRUE)
+  }
+  
+  for(i in 1:ncol(trans.tumor)){
+    trans.tumor[is.na(trans.tumor[,i]), i] <- mean(unlist(trans.tumor[,i]), na.rm = TRUE)
+  }
   
   ppid = prot.tumor$Patient_ID
   tpid = trans.tumor$Patient_ID

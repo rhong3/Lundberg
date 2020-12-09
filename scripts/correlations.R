@@ -3,7 +3,6 @@ library(ggplot2)
 library(ggpubr)
 library(gridExtra)
 library(pheatmap)
-library(ComplexHeatmap)
 library(RColorBrewer)
 
 cancers = c('BRCA', 'LUAD', 'LSCC', 'OV', 'CO', 'HN', 'UCEC', 'GBM', 'CCRCC')
@@ -106,7 +105,7 @@ ensg_ccdprotein_nontranscript_regulated <- read_csv("ensg_ccdprotein_nontranscri
 
 
 
-cancerss = list(c('BRCA',2,4), c('LUAD',6,6), c('LSCC',4,4), c('OV',2,4), c('CO',2,2), c('HN',2,3), c('UCEC',3,3), c('GBM',3,4), c('CCRCC',3,2))
+cancerss = list(c('BRCA',4,4), c('LUAD',3,3), c('LSCC',3,3), c('OV',2,2), c('CO',2,2), c('HN',3,3), c('UCEC',4,4), c('GBM',4,4), c('CCRCC',3,3))
 
 
 # Corr within group
@@ -176,17 +175,21 @@ for (can in cancerss){
   )
   
   pp = pheatmap(matt.prot, annotation_row = annodf.prot, annotation_col = annodf.prot, annotation_colors = ann_colors_prot, annotation_legend=FALSE, show_rownames=FALSE, show_colnames=FALSE, main=paste(can[1], ' proteomics Spearman correlation ALL', sep=''))
-  pt = pheatmap(matt.trans, annotation_row = annodf.trans, annotation_col = annodf.trans, annotation_colors = ann_colors_trans, annotation_legend=FALSE, show_rownames=FALSE, show_colnames=FALSE, main=paste(can[1], ' transcriptomics Spearman correlation ALL', sep=''))
+  pt = pheatmap(matt.trans, annotation_row = annodf.trans, annotation_col =annodf.trans, annotation_colors = ann_colors_trans, annotation_legend=FALSE, show_rownames=FALSE, show_colnames=FALSE, main=paste(can[1], ' transcriptomics Spearman correlation ALL', sep=''))
   pdf(file=paste('Results/', can[1], "_ALL-internal-corr.pdf", sep=''),
       width=20,height=11)
   grid.arrange(pp$gtable, pt$gtable, nrow=1, ncol=2)
   dev.off()
-  ppg = sort(cutree(pp$tree_row, k=can[2]))
+  
+  matt.prot = read_csv(paste('Results/', can[1], '_protein-corr-ALL.csv', sep=''))
+  ppg = cbind(matt.prot, clusters = cutree(pp$tree_row, k=can[2]))
+  ppg = ppg[,c(ncol(ppg), 2:(ncol(ppg)-1))]
   write.csv(ppg, paste('Results/', can[1], "_prot_groups.csv", sep=''))
-  ptg = sort(cutree(pt$tree_row, k=can[3]))
+  matt.trans = read_csv(paste('Results/', can[1], '_RNA-corr-ALL.csv', sep=''))
+  ptg = cbind(matt.trans, clusters = cutree(pt$tree_row, k=can[3]))
+  ptg = ptg[,c(ncol(ptg), 2:(ncol(ptg)-1))]
   write.csv(ptg, paste('Results/', can[1], "_RNA_groups.csv", sep=''))
   
-
 
   prot.tumor = prot[!grepl("\\.N", prot$Patient_ID), ]
   trans.tumor = trans[!grepl("\\.N", trans$Patient_ID), ]
@@ -206,6 +209,7 @@ for (can in cancerss){
   annodf.prot <- sapply(annodf.prot, as.factor)
   rownames(annodf.prot) = ensg_ccdprotein_nontranscript_regulated[ensg_ccdprotein_nontranscript_regulated$SYMBOL %in% row.names(matt.prot),]$SYMBOL
   annodf.prot = data.frame(annodf.prot)
+  
   
   Reason_color = colorRampPalette(brewer.pal(8,"Dark2"))(length(levels(annodf.prot$Reason)))
   names(Reason_color) <- levels(annodf.prot$Reason)
